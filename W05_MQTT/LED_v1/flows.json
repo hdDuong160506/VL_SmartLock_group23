@@ -1,0 +1,155 @@
+[
+    {
+        "id": "11af65845a5a4661",
+        "type": "tab",
+        "label": "SmartLock_W05_MQTT",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "ff268b6ef8d008c6",
+        "type": "mqtt in",
+        "z": "11af65845a5a4661",
+        "name": "ESP32 Status",
+        "topic": "smartlock/group23/duong2026/demo/status",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "665adead6d613c94",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 280,
+        "wires": [
+            [
+                "0213b48a23b99c09"
+            ]
+        ]
+    },
+    {
+        "id": "0213b48a23b99c09",
+        "type": "debug",
+        "z": "11af65845a5a4661",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "a615bd37c38db15c",
+        "type": "inject",
+        "z": "11af65845a5a4661",
+        "name": "Bật LED",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "SIM_LED_ON",
+        "payloadType": "str",
+        "x": 620,
+        "y": 220,
+        "wires": [
+            [
+                "ba46de2a47f29576"
+            ]
+        ]
+    },
+    {
+        "id": "a75df1c77f953b3e",
+        "type": "inject",
+        "z": "11af65845a5a4661",
+        "name": "Tắt LED",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "SIM_LED_OFF",
+        "payloadType": "str",
+        "x": 600,
+        "y": 360,
+        "wires": [
+            [
+                "ba46de2a47f29576"
+            ]
+        ]
+    },
+    {
+        "id": "ba46de2a47f29576",
+        "type": "mqtt out",
+        "z": "11af65845a5a4661",
+        "name": "ESP32 Command",
+        "topic": "smartlock/group23/duong2026/demo/cmd",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "665adead6d613c94",
+        "x": 870,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "665adead6d613c94",
+        "type": "mqtt-broker",
+        "name": "SmartLock Broker",
+        "broker": "test.mosquitto.org",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
