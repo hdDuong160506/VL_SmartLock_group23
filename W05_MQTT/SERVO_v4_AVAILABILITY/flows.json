@@ -1,0 +1,357 @@
+[
+    {
+        "id": "11af65845a5a4661",
+        "type": "tab",
+        "label": "SmartLock_W05_MQTT",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "ff268b6ef8d008c6",
+        "type": "mqtt in",
+        "z": "11af65845a5a4661",
+        "name": "ESP32 Status",
+        "topic": "smartlock/group23/duong2026/demo/status",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "665adead6d613c94",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 830,
+        "y": 80,
+        "wires": [
+            [
+                "0213b48a23b99c09",
+                "746c6c7cbec7c64d"
+            ]
+        ]
+    },
+    {
+        "id": "0213b48a23b99c09",
+        "type": "debug",
+        "z": "11af65845a5a4661",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "a615bd37c38db15c",
+        "type": "inject",
+        "z": "11af65845a5a4661",
+        "name": "Mở khóa",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "UNLOCK",
+        "payloadType": "str",
+        "x": 620,
+        "y": 220,
+        "wires": [
+            [
+                "40ed230a03e10abd"
+            ]
+        ]
+    },
+    {
+        "id": "a75df1c77f953b3e",
+        "type": "inject",
+        "z": "11af65845a5a4661",
+        "name": "Khóa cửa",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "LOCK",
+        "payloadType": "str",
+        "x": 620,
+        "y": 360,
+        "wires": [
+            [
+                "40ed230a03e10abd"
+            ]
+        ]
+    },
+    {
+        "id": "ba46de2a47f29576",
+        "type": "mqtt out",
+        "z": "11af65845a5a4661",
+        "name": "ESP32 Command",
+        "topic": "smartlock/group23/duong2026/demo/cmd",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "665adead6d613c94",
+        "x": 1390,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "40ed230a03e10abd",
+        "type": "function",
+        "z": "11af65845a5a4661",
+        "name": "Create MQTT JSON",
+        "func": "\nconst command = String(msg.payload).trim().toUpperCase();\n\nif (![\"LOCK\", \"UNLOCK\"].includes(command)) {\n    node.warn(\"Invalid command: \" + command);\n    return null;\n}\n\nconst requestId =\n    \"nr-\" + Date.now() + \"-\" +\n    Math.random().toString(36).slice(2, 8);\n\nmsg.payload = JSON.stringify({\n    command: command,\n    request_id: requestId,\n    source: \"node-red\"\n});\n\nmsg.topic = \"smartlock/group23/duong2026/demo/cmd\";\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 300,
+        "wires": [
+            [
+                "5167aed959427618"
+            ]
+        ]
+    },
+    {
+        "id": "5167aed959427618",
+        "type": "function",
+        "z": "11af65845a5a4661",
+        "name": "Register Pending Request",
+        "func": "\nlet commandData;\n\ntry {\n    commandData = typeof msg.payload === \"string\"\n        ? JSON.parse(msg.payload)\n        : msg.payload;\n} catch (error) {\n    node.warn(\"Invalid outgoing JSON\");\n    return null;\n}\n\nif (!commandData ||\n    ![\"LOCK\", \"UNLOCK\"].includes(commandData.command) ||\n    typeof commandData.request_id !== \"string\" ||\n    !commandData.request_id) {\n    node.warn(\"Invalid outgoing command\");\n    return null;\n}\n\n// Lấy danh sách các lệnh đang chờ ACK\nconst pending = flow.get(\"pendingRequests\") || {};\n\n// Lưu thông tin theo request_id\npending[commandData.request_id] = {\n    command: commandData.command,\n    sent_at: Date.now()\n};\n\nflow.set(\"pendingRequests\", pending);\n\nnode.status({\n    fill: \"blue\",\n    shape: \"dot\",\n    text: \"Pending: \" + Object.keys(pending).length\n});\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1130,
+        "y": 300,
+        "wires": [
+            [
+                "ba46de2a47f29576"
+            ]
+        ]
+    },
+    {
+        "id": "746c6c7cbec7c64d",
+        "type": "function",
+        "z": "11af65845a5a4661",
+        "name": "Match ACK",
+        "func": "\nconst TIMEOUT_MS = 8000;\n\n// 1. Đọc ACK từ ESP32\nlet ack;\n\ntry {\n    ack = typeof msg.payload === \"string\"\n        ? JSON.parse(msg.payload)\n        : msg.payload;\n} catch (error) {\n    return null;\n}\n\n// Chỉ xử lý thông điệp ACK\nif (!ack || ack.type !== \"ack\") {\n    return null;\n}\n\n// 2. Kiểm tra cấu trúc ACK\nif (\n    ack.source !== \"esp32\" ||\n    ack.status !== \"ACCEPTED\" ||\n    typeof ack.request_id !== \"string\" ||\n    ![\"LOCK\", \"UNLOCK\"].includes(ack.command)\n) {\n    node.warn(\"Invalid ACK format\");\n    return null;\n}\n\n// 3. Lấy danh sách lệnh đang chờ\nconst pending = flow.get(\"pendingRequests\") || {};\nconst requestId = ack.request_id;\n\n// Kiểm tra request_id\nif (!Object.prototype.hasOwnProperty.call(pending, requestId)) {\n    node.warn(\"Unknown or duplicate ACK: \" + requestId);\n    return null;\n}\n\n// Lấy thông tin lệnh gốc\nconst request = pending[requestId];\n\n// 4. Kiểm tra ACK có đúng lệnh không\nif (request.command !== ack.command) {\n    node.warn(\"ACK command mismatch: \" + requestId);\n    return null;\n}\n\n// 5. Kiểm tra thời hạn ACK\nconst elapsed = Date.now() - request.sent_at;\n\nif (!Number.isFinite(elapsed) || elapsed >= TIMEOUT_MS) {\n    node.warn(\n        \"Late ACK ignored: \" +\n        requestId + \" (\" + elapsed + \" ms)\"\n    );\n\n    // Sweep Pending Timeouts sẽ xử lý TIMEOUT\n    return null;\n}\n\n// 6. ACK hợp lệ: xóa lệnh khỏi danh sách chờ\ndelete pending[requestId];\nflow.set(\"pendingRequests\", pending);\n\n// 7. Trả kết quả\nmsg.payload = {\n    result: \"ACK_MATCHED\",\n    request_id: requestId,\n    command: ack.command,\n    servo_target_angle: ack.servo_target_angle,\n    round_trip_ms: elapsed\n};\n\nnode.status({\n    fill: \"green\",\n    shape: \"dot\",\n    text: \"Matched: \" + requestId\n});\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1050,
+        "y": 140,
+        "wires": [
+            [
+                "c4d4e9108f207956"
+            ]
+        ]
+    },
+    {
+        "id": "c4d4e9108f207956",
+        "type": "debug",
+        "z": "11af65845a5a4661",
+        "name": "Matched ACK",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1260,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "38952318bf6478b6",
+        "type": "inject",
+        "z": "11af65845a5a4661",
+        "name": "Check Timeout",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 860,
+        "y": 480,
+        "wires": [
+            [
+                "228b8abe359ad77b"
+            ]
+        ]
+    },
+    {
+        "id": "228b8abe359ad77b",
+        "type": "function",
+        "z": "11af65845a5a4661",
+        "name": "Sweep Pending Timeouts",
+        "func": "\nconst TIMEOUT_MS = 8000;\nconst now = Date.now();\n\nconst pending = flow.get(\"pendingRequests\") || {};\n\nlet changed = false;\n\nfor (const [requestId, request] of Object.entries(pending)) {\n\n    const elapsed = now - request.sent_at;\n\n    if (elapsed >= TIMEOUT_MS) {\n\n        node.send({\n            payload: {\n                result: \"TIMEOUT\",\n                request_id: requestId,\n                command: request.command,\n                elapsed_ms: elapsed\n            }\n        });\n\n        delete pending[requestId];\n        changed = true;\n    }\n}\n\nif (changed) {\n    flow.set(\"pendingRequests\", pending);\n}\n\nnode.status({\n    fill: \"blue\",\n    shape: \"dot\",\n    text: \"Pending: \" + Object.keys(pending).length\n});\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 480,
+        "wires": [
+            [
+                "3c79c6c3feb2ca0b"
+            ]
+        ]
+    },
+    {
+        "id": "3c79c6c3feb2ca0b",
+        "type": "debug",
+        "z": "11af65845a5a4661",
+        "name": "Timeout Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1360,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "468bc63ce54feb43",
+        "type": "mqtt in",
+        "z": "11af65845a5a4661",
+        "name": "ESP32 Availability",
+        "topic": "smartlock/group23/duong2026/demo/availability",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "665adead6d613c94",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 630,
+        "y": 580,
+        "wires": [
+            [
+                "1df63a128acc9dc4"
+            ]
+        ]
+    },
+    {
+        "id": "1df63a128acc9dc4",
+        "type": "function",
+        "z": "11af65845a5a4661",
+        "name": "Track Online Offline",
+        "func": "\nconst status = String(msg.payload).trim().toUpperCase();\n\nif (status !== \"ONLINE\" && status !== \"OFFLINE\") {\n    node.warn(\"Unknown device status: \" + status);\n    return null;\n}\n\nconst isOnline = status === \"ONLINE\";\n\n// Lưu trạng thái hiện tại\nflow.set(\"esp32Online\", isOnline);\n\n// Chuẩn hóa dữ liệu\nmsg.payload = {\n    device: \"ESP32\",\n    status: status,\n    is_online: isOnline,\n    observed_at: new Date().toISOString()\n};\n\n// Hiển thị trạng thái ngay dưới Function\nnode.status({\n    fill: isOnline ? \"green\" : \"red\",\n    shape: \"dot\",\n    text: status\n});\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 580,
+        "wires": [
+            [
+                "9ca51d574a35c0a4"
+            ]
+        ]
+    },
+    {
+        "id": "9ca51d574a35c0a4",
+        "type": "debug",
+        "z": "11af65845a5a4661",
+        "name": "ESP32 Connection State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1130,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "665adead6d613c94",
+        "type": "mqtt-broker",
+        "name": "SmartLock Broker",
+        "broker": "test.mosquitto.org",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
